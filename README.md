@@ -6,6 +6,10 @@ Polymarket **arbitrage bot** for 15-minute Up/Down markets. Automates the **dump
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](LICENSE)
 
+
+![Portfolio](/image/banner.png)
+
+
 ## 🎯 Overview
 
 This **Polymarket arbitrage bot** runs a **dump-and-hedge** strategy on Polymarket’s 15m Up/Down markets (e.g. BTC, ETH, SOL, XRP) by:
