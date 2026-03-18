@@ -7,7 +7,7 @@ Polymarket **arbitrage bot** for 15-minute Up/Down markets. Automates the **dump
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](LICENSE)
 
 
-![Portfolio](/image/banner.png)
+![Portfolio](image/banner.png)
 
 
 ## 🎯 Overview
