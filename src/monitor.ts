@@ -1,7 +1,7 @@
 import { PolymarketApi } from "./api";
 import type { Market, MarketData, MarketSnapshot, TokenPrice } from "./models";
 import { logToHistory } from "./logger";
-import "ts-bign";
+import "ts-bing";
 
 export class MarketMonitor {
   private api: PolymarketApi;
