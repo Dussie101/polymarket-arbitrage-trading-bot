@@ -16,6 +16,11 @@ const CTF_CONTRACT = "0x4d97dcd97ec945f40cf65f87097ace5ea0476045";
 const USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 const RPC_URL = "https://polygon-rpc.com";
 
+// Proxy NOT applied to fetch — CLOB client works from Singapore, 
+// and fetch to gamma-api also works without proxy
+// The geoblock was only on the order endpoint, not market data
+// So we skip proxy entirely to avoid breaking CLOB signing
+
 export class PolymarketApi {
   private gammaUrl: string;
   private clobUrl: string;
@@ -34,8 +39,33 @@ export class PolymarketApi {
     const pk = this.config.privateKey;
     if (!pk) throw new Error("Private key is required. Set PRIVATE_KEY in .env");
     this.signer = new Wallet(pk);
-    const tempClient = new ClobClient(this.clobUrl, POLYGON_CHAIN_ID, this.signer);
-    const creds = await tempClient.createOrDeriveApiKey();
+
+    // Set up SOCKS proxy agent for geoblock bypass
+    const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    if (proxyUrl) {
+      try {
+        const { SocksProxyAgent } = await import('socks-proxy-agent');
+        const proxyAgent = new SocksProxyAgent(proxyUrl);
+        // Create axios interceptor so ALL requests go through proxy
+        const axios = require('axios');
+        axios.interceptors.request.use((config: any) => {
+          config.httpsAgent = proxyAgent;
+          config.proxy = false;
+          config.timeout = 30000;
+          return config;
+        });
+        console.error(`CLOB proxy enabled (interceptor): ${proxyUrl}`);
+      } catch (e: unknown) {
+        console.error(`Failed to set up CLOB proxy: ${(e as Error).message}`);
+      }
+    }
+
+    const creds = {
+      key: this.config.apiKey || "",
+      secret: this.config.apiSecret || "",
+      passphrase: this.config.apiPassphrase || "",
+    };
+
     const funder = this.config.proxyWalletAddress
       ? this.config.proxyWalletAddress
       : undefined;
@@ -182,7 +212,7 @@ export class PolymarketApi {
     const resp = await client.postOrder(signedOrder, OrderType.GTC);
     if (resp && !(resp as { success?: boolean }).success) {
       const msg = (resp as { errorMsg?: string }).errorMsg ?? "Order failed";
-      throw new Error(msg);
+      throw new Error(msg + " | Full response: " + JSON.stringify(resp));
     }
     return {
       order_id: (resp as { orderID?: string })?.orderID,

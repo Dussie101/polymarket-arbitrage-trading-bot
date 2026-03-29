@@ -8,6 +8,7 @@ export class MarketMonitor {
   private marketName: string;
   private btcMarket15m: Market;
   private checkIntervalMs: number;
+  private periodDurationSecs: number;
   private upTokenId: string | null = null;
   private downTokenId: string | null = null;
   private lastMarketRefresh: number | null = null;
@@ -17,14 +18,16 @@ export class MarketMonitor {
     api: PolymarketApi,
     marketName: string,
     btcMarket15m: Market,
-    checkIntervalMs: number
+    checkIntervalMs: number,
+    periodDurationSecs: number = 300
   ) {
     this.api = api;
     this.marketName = marketName;
     this.btcMarket15m = btcMarket15m;
     this.checkIntervalMs = checkIntervalMs;
+    this.periodDurationSecs = periodDurationSecs;
     const now = Math.floor(Date.now() / 1000);
-    this.currentPeriodTimestamp = Math.floor(now / 900) * 900;
+    this.currentPeriodTimestamp = Math.floor(now / periodDurationSecs) * periodDurationSecs;
   }
 
   async updateMarket(btcMarket15m: Market): Promise<void> {
@@ -37,7 +40,7 @@ export class MarketMonitor {
     this.downTokenId = null;
     this.lastMarketRefresh = null;
     const now = Math.floor(Date.now() / 1000);
-    this.currentPeriodTimestamp = Math.floor(now / 900) * 900;
+    this.currentPeriodTimestamp = Math.floor(now / this.periodDurationSecs) * this.periodDurationSecs;
   }
 
   getCurrentConditionId(): string {
@@ -56,15 +59,16 @@ export class MarketMonitor {
   }
 
   static extractDurationFromSlug(slug: string): number {
+    if (slug.includes("-5m-")) return 300;
     if (slug.includes("-15m-")) return 900;
     if (slug.includes("-1h-")) return 3600;
-    return 900;
+    return 300;
   }
 
   private async refreshMarketTokens(): Promise<void> {
     const now = Date.now();
     const shouldRefresh =
-      !this.lastMarketRefresh || (now - this.lastMarketRefresh) / 1000 >= 900;
+      !this.lastMarketRefresh || (now - this.lastMarketRefresh) / 1000 >= this.periodDurationSecs;
     if (!shouldRefresh) return;
 
     const marketId = this.getCurrentConditionId();

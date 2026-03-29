@@ -1,3 +1,4 @@
+// Bot entry point
 import { loadConfig } from "./config";
 import { PolymarketApi } from "./api";
 import { MarketMonitor } from "./monitor";
@@ -8,7 +9,7 @@ import type { Market } from "./models";
 function parseArgs(): { simulation: boolean } {
   const args = process.argv.slice(2);
   const production = args.includes("--production");
-  const simulation = production ? false : (args.includes("--simulation") || true);
+  const simulation = args.includes("--simulation") ? true : (production ? false : true);
   return { simulation };
 }
 
@@ -32,10 +33,11 @@ async function discoverMarketForAsset(
           );
         })();
 
-  const periodDurationSecs = 900;
+  const config = loadConfig();
+  const periodDurationSecs = config.periodDurationSecs || 300; // default 5 min
+  const timeframeStr = config.timeframeStr || "5m";
   const currentTime = Math.floor(Date.now() / 1000);
   const roundedTime = Math.floor(currentTime / periodDurationSecs) * periodDurationSecs;
-  const timeframeStr = "15m";
   const slug = `${slugPrefix}-updown-${timeframeStr}-${roundedTime}`;
 
   const seenIds = new Set<string>();
@@ -87,7 +89,8 @@ async function main(): Promise<void> {
 
   const args = parseArgs();
   const config = loadConfig();
-  const simulation = args.simulation !== false ? config.simulation : !config.simulation;
+  const simulation = false; // PRODUCTION - force real trades
+  // const simulation = args.simulation !== false ? config.simulation : !config.simulation;
 
   console.error("Starting Polymarket Hedge Trading Bot");
   console.error("Mode:", simulation ? "SIMULATION" : "PRODUCTION");
@@ -200,7 +203,8 @@ async function main(): Promise<void> {
         await new Promise((r) => setTimeout(r, sleepSecs * 1000));
 
         const now = Math.floor(Date.now() / 1000);
-        const currentPeriod = Math.floor(now / 900) * 900;
+        const periodDuration = config.periodDurationSecs || 300;
+        const currentPeriod = Math.floor(now / periodDuration) * periodDuration;
 
         if (lastProcessedPeriod !== null && currentPeriod === lastProcessedPeriod) {
           await new Promise((r) => setTimeout(r, 5000));

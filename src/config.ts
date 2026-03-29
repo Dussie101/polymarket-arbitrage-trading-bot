@@ -60,6 +60,8 @@ export interface Config {
   polymarket: PolymarketConfig;
   trading: TradingConfig;
   simulation: boolean;
+  periodDurationSecs: number;
+  timeframeStr: string;
 }
 
 export function loadConfig(): Config {
@@ -89,5 +91,7 @@ export function loadConfig(): Config {
       dumpHedgeStopLossPercentage: envNumber("DUMP_HEDGE_STOP_LOSS_PERCENTAGE", 0.2),
     },
     simulation,
+    periodDurationSecs: envNumber("PERIOD_DURATION_SECS", 300), // 300 = 5 min, 900 = 15 min
+    timeframeStr: env("TIMEFRAME", "5m"),
   };
 }

@@ -152,8 +152,8 @@ export class DumpHedgeTrader {
 
     s.upPriceHistory.push([currentTime, upAsk]);
     s.downPriceHistory.push([currentTime, downAsk]);
-    if (s.upPriceHistory.length > 10) s.upPriceHistory.shift();
-    if (s.downPriceHistory.length > 10) s.downPriceHistory.shift();
+    if (s.upPriceHistory.length > 60) s.upPriceHistory.shift();
+    if (s.downPriceHistory.length > 60) s.downPriceHistory.shift();
 
     const phase = s.phase;
 
@@ -318,14 +318,15 @@ export class DumpHedgeTrader {
     currentTime: number
   ): boolean {
     if (priceHistory.length < 2) return false;
-    const threeSecondsAgo = currentTime - 3;
+    const lookbackWindow = this.windowMinutes >= 4 ? 30 : 3; // 30s for 5-min markets, 3s for 15-min
+    const lookbackAgo = currentTime - lookbackWindow;
     let oldPrice: number | null = null;
     let oldTs: number | null = null;
     let newPrice: number | null = null;
     let newTs: number | null = null;
 
     for (const [ts, price] of priceHistory) {
-      if (ts <= threeSecondsAgo) {
+      if (ts <= lookbackAgo) {
         if (oldTs == null || ts > oldTs) {
           oldPrice = price;
           oldTs = ts;
@@ -358,7 +359,8 @@ export class DumpHedgeTrader {
       return false;
 
     const timeDiff = newTs - oldTs;
-    if (timeDiff < 1 || timeDiff > 5) return false;
+    const maxTimeDiff = lookbackWindow + 5; // allow up to lookbackWindow+5 seconds
+    if (timeDiff < 1 || timeDiff > maxTimeDiff) return false;
     const priceDrop = oldPrice - newPrice;
     const dropPercent = priceDrop / oldPrice;
     return dropPercent >= this.moveThreshold && priceDrop > 0;
