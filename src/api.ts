@@ -206,10 +206,13 @@ export class PolymarketApi {
       const feeUrl = `${this.clobUrl}/fee-rate?token_id=${encodeURIComponent(tokenId)}`;
       const feeRes = await fetch(feeUrl);
       if (feeRes.ok) {
-        const feeJson = await feeRes.json() as { fee_rate_bps?: string };
+        const feeJson = await feeRes.json() as { fee_rate_bps?: string; base_fee?: number; fee_rate_bps_string?: string };
         if (feeJson.fee_rate_bps) {
-          feeRateBps = parseInt(feeJson.fee_rate_bps, 10);
+          feeRateBps = parseInt(String(feeJson.fee_rate_bps), 10);
+        } else if (feeJson.base_fee !== undefined) {
+          feeRateBps = Math.round(feeJson.base_fee * 10000);
         }
+        console.error(`Fee rate for ${tokenId}: ${feeRateBps} bps`);
       }
     } catch (e) {
       console.error("Failed to fetch fee rate, using 0:", (e as Error).message);
