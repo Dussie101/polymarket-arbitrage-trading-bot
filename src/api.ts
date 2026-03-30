@@ -200,12 +200,28 @@ export class PolymarketApi {
     const tickSizeResolved = (tickSize === "0.1" || tickSize === "0.01" || tickSize === "0.001" || tickSize === "0.0001")
       ? tickSize
       : "0.01";
+    // Fetch fee rate for this token
+    let feeRateBps = 0;
+    try {
+      const feeUrl = `${this.clobUrl}/fee-rate?token_id=${encodeURIComponent(tokenId)}`;
+      const feeRes = await fetch(feeUrl);
+      if (feeRes.ok) {
+        const feeJson = await feeRes.json() as { fee_rate_bps?: string };
+        if (feeJson.fee_rate_bps) {
+          feeRateBps = parseInt(feeJson.fee_rate_bps, 10);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch fee rate, using 0:", (e as Error).message);
+    }
+
     const signedOrder = await client.createOrder(
       {
         tokenID: tokenId,
         price,
         side: sideEnum,
         size,
+        feeRateBps,
       },
       tickSizeResolved as "0.001" | "0.01" | "0.1" | "0.0001"
     );
